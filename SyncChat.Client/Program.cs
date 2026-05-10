@@ -1,37 +1,60 @@
 ﻿using System;
 using System.Net.Sockets;
 using System.Reflection;
+using System.Runtime.CompilerServices;
 using System.Text;
 
 namespace SyncChat.Client
 {
     class Program
     {
+        private static TcpClient _client;
+        private static NetworkStream _stream;
+        private static bool _isRunning = true;
         static void Main(string[] args)
         {
-            int port = 8888;
-            TcpClient client = new TcpClient();
-            client.Connect("127.0.0.1",port);
+            _client = new TcpClient();
+            _client.Connect("127.0.0.1",8888);
+            _stream = _client.GetStream();
             Console.WriteLine("Подключено к серверу!");
-            NetworkStream stream = client.GetStream();
-            Console.Write("Введите сообщение для сервера: ");
 
-            string message = Console.ReadLine();
-            byte[] data = Encoding.UTF8.GetBytes(message);
+            Thread receriveThread = new Thread(ReceiveMessages);
+            receriveThread.Start();
 
-            stream.Write(data, 0, data.Length);
-            Console.WriteLine("Сообщение отправлено");
+            while (_isRunning)
+            {
+                string message = Console.ReadLine();
+                if (message.ToLower() == "/exit")
+                {
+                    _isRunning = false;
+                    break;
+                }
+                byte[] data = Encoding.UTF8.GetBytes(message);
+                _stream.Write(data, 0, data.Length);
 
+            }
+            _client.Close();
+            Console.WriteLine("Отключено от сервера");
+        }       
+
+        static void ReciveMessages()
+        {
             byte[] buffer = new byte[1024];
-            int bytesRead = stream.Read(buffer, 0, buffer.Length);
-            string response = Encoding.UTF8.GetString(buffer, 0, bytesRead);
+            try
+            {
+                while (_isRunning)
+                {
+                    int bytesRead = _stream.Read(buffer,0,buffer.Length);
+                    if (bytesRead == 0) break;
 
-            Console.WriteLine($"Прочитано байт: {bytesRead}");
-            Console.WriteLine($"Ответ от сервера: {response}");
-            
-            client.Close();
-            Console.WriteLine("Нажмите любую кнопку для выхода...");
-            Console.ReadKey();
+                    string message = Encoding.UTF8.GetString(buffer, 0, bytesRead);
+                    Console.WriteLine($"[Сервер]: {message}");
+                }
+            }
+            catch
+            {
+                Console.WriteLine("Соединение разорвано");
+            }
         }
     }
 }
