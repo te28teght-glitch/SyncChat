@@ -7,29 +7,24 @@ namespace SyncChat.Server
 {
     class Program
     {
+        public static List<ClientHandler> _clients = new List<ClientHandler>();
         static void Main(string[] args)
         {
-            TcpListener listener = new TcpListener(IPAddress.Any, 8888);
-            listener.Start();
-            Console.WriteLine("Сервер запущен. Порт:8888. Ожидание подключения...");
+           TcpListener listener = new TcpListener(IPAddress.Any, 8888);
+           listener.Start();
+           Console.WriteLine("Сервер запущени на порту 8888. Ожидание подключений...");
 
-            while (true)
+           while (true)
             {
                 TcpClient client = listener.AcceptTcpClient();
-                Console.WriteLine("Клиент подключился!");
+                ClientHandler handler = new ClientHandler(client);
 
-                NetworkStream stream = client.GetStream();
-                byte[] buffer = new byte[1024];
-                int bytesRead = stream.Read(buffer, 0, buffer.Length);
-                string receivedMessage = Encoding.UTF8.GetString(buffer, 0, bytesRead);
-                Console.WriteLine($"Получено: {receivedMessage}");
-
-                byte[] response = Encoding.UTF8.GetBytes(receivedMessage);
-                stream.Write(response, 0, response.Length);
-                Console.WriteLine("Ответ отправлен клиенту");
-    
-                
-                client.Close();
+                lock (_clients)
+                {
+                    _clients.Add(handler);
+                }
+                Thread clientThread = new Thread(handler.Run);
+                clientThread.Start();
             }
         }
     }
