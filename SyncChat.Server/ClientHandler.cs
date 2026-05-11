@@ -11,6 +11,7 @@ namespace SyncChat.Server
         private TcpClient _client;
         private NetworkStream _stream;
         private string _nickname;
+        private int _ages;
         private string _clientId;
         private byte[] _buffer;
 
@@ -27,6 +28,11 @@ namespace SyncChat.Server
         {
             int bytesRead = _stream.Read(_buffer,0,_buffer.Length);
             _nickname = Encoding.UTF8.GetString(_buffer,0,bytesRead);
+
+            bytesRead = _stream.Read(_buffer,0,_buffer.Length);
+            string ages = Encoding.UTF8.GetString(_buffer,0,bytesRead);
+            _ages = int.Parse(ages);
+
             Console.WriteLine($"[{_nickname}] Клиент подключился");
 
             BroadcastMessage($"Подключился клиент:{_nickname}");
