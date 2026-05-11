@@ -1,4 +1,5 @@
 using System;
+using System.IO.Compression;
 using System.Net.Sockets;
 using System.Text;
 using System.Threading;
@@ -9,6 +10,7 @@ namespace SyncChat.Server
     {
         private TcpClient _client;
         private NetworkStream _stream;
+        private string _nickname;
         private string _clientId;
         private byte[] _buffer;
 
@@ -18,21 +20,26 @@ namespace SyncChat.Server
             _stream = _client.GetStream();
             _clientId = Guid.NewGuid().ToString().Substring(0, 8);
             _buffer = new byte[1024];
+
         }
 
         public void Run()
         {
-            Console.WriteLine($"[{_clientId}] Клиент подключился");
+            int bytesRead = _stream.Read(_buffer,0,_buffer.Length);
+            _nickname = Encoding.UTF8.GetString(_buffer,0,bytesRead);
+            Console.WriteLine($"[{_nickname}] Клиент подключился");
+
+            BroadcastMessage($"Подключился клиент:{_nickname}");
 
             try
             {
                 while (true)
                 {
-                    int bytesRead = _stream.Read(_buffer, 0, _buffer.Length);
+                    bytesRead = _stream.Read(_buffer, 0, _buffer.Length);
                     
                     if (bytesRead == 0)
                     {
-                        Console.WriteLine($"[{_clientId}] Клиент отключился");
+                        Console.WriteLine($"[{_nickname}] Клиент отключился");
                         break;
                     }
 
@@ -57,6 +64,7 @@ namespace SyncChat.Server
                     Program._clients.Remove(this);
                 }
                 Console.WriteLine($"[{_clientId}] Клиент удалён");
+                BroadcastMessage ($"{_nickname} Отключился");
             }
         }
 
