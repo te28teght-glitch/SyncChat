@@ -14,7 +14,7 @@ namespace SyncChat.Client
         static void Main(string[] args)
         {
             _client = new TcpClient();
-            _client.Connect("127.0.0.1", 8888);
+            _client.Connect("45.132.18.237", 8888);
             _stream = _client.GetStream();
             Console.WriteLine("Подключено к серверу!");
 
